@@ -1,5 +1,8 @@
 import mapmath
+import threading
+import time
 from uav_agent import UAVAgent
+import copy
 
 
 # A basic Mission_list structure is [ (targer.x, targer.y), [(p1x,p1y),(p2x,p2y)...]]
@@ -25,10 +28,10 @@ def update(pos, info, M_list , T_list, T_note, T_old, Forbid, TarNew):
     # update the state of all uav agents
     if len(UAV_list) == 0:
         for i in range(0, len(M_list)):
-            UAV_list.append(UAVAgent(i, M_list[i].copy(), Forbid, T_list))
+            UAV_list.append(UAVAgent(i, copy.deepcopy(M_list[i]), Forbid, T_list))
     else:
         for i in range(0, len(UAV_list)):
-            UAV_list[i].update(M_list[i].copy(), T_list)
+            UAV_list[i].update(copy.deepcopy(M_list[i]), T_list)
 
     # info is a list of INFOM type meaning that multiple cases could be happened in a second
     #INFOM type:
@@ -56,7 +59,7 @@ def update(pos, info, M_list , T_list, T_note, T_old, Forbid, TarNew):
 def contractnet_negotiation(case,info,M_list, TarNew):
     # example1: If UAV i fail turn its mission to the leader
     if(case == 'fail'):
-        return
+        UAV_list.pop(info[1])
 #        leader = int(info[1]/5)*5
 #        # make leader took over the mission when original mission had all done
 #        mission_of_leader = [M_list[leader][i][0] for i in range(len(M_list[leader]))]
@@ -69,9 +72,40 @@ def contractnet_negotiation(case,info,M_list, TarNew):
         if len(TarNew) == 0:
             return
         new_mission = TarNew[0]
+        bids = [-1] * len(UAV_list)
+        for uav_agent in UAV_list:
+            x = threading.Thread(target=uav_agent.post_bid, args=(new_mission,bids,))
+            #threads.append(x)
+            x.start()
+        time.sleep(0.900)
+
+        print(bids)
+        index_min = 0
+        all_negative = True
+        for i in range(0, len(bids)):
+            if bids[i] == -1:
+                continue
+            if all_negative:
+                index_min = i
+            all_negative = False
+            if bids[i] < bids[index_min]:
+                index_min = i
+        if all_negative: # TODO deal with the case that no bids have been proposed
+            return
+        for i in range(0, len(UAV_list)):
+            if i == index_min:
+                UAV_list[index_min].accept_mission(new_mission)
+            else:
+                UAV_list[i].cancel_new_mission(new_mission)
+        #real_index = 0
+        #for i in range(0,len(UAV_list)):
+        print(index_min)
+        print(M_list[index_min])
+        print(UAV_list[index_min].current_missions)
+        M_list[index_min] = UAV_list[index_min].current_missions
         # append last end point
         #M_list[info[2]].insert(-1, new_mission)# new target would also be mlist_struct with [[xnewtar, xnewtar], [[[xnewtar, xnewtar]]],...]
-        M_list[info[2]].insert(0, new_mission)
+        #M_list[info[2]].insert(0, new_mission)
         TarNew.pop()
 
 
