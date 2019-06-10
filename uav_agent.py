@@ -2,8 +2,8 @@ import mapmath
 import math
 import copy
 import time
-k1 = 0.5
-k2 = 0.5
+k1 = 0.3
+k2 = 0.7
 
 class UAVAgent:
 
@@ -12,47 +12,95 @@ class UAVAgent:
         self.current_missions = current_missions
         self.forbidden_areas = forbidden_areas
         self.threats = threats
-        self.active = True
         self.current_utility = self.calculate_utility(self.current_missions)
-        self.new_missions = None
+        self.new_mission = None
         self.new_utility = None
+        self.leader = None
+        self.is_leader = (self.uav_id == 0 or self.uav_id == 5 or self.uav_id == 10)
+        self.current_index = self.uav_id
 
-    def update(self, current_missions, threats):
+    def update(self, current_missions, current_index, threats=None):
         self.current_missions = current_missions
-        self.threats = threats
+        if threats:
+            self.threats = threats
         self.current_utility = self.calculate_utility(self.current_missions)
+        self.current_index = current_index
 
-    def deactivate(self):
-        self.active = False
+    def set_leader(self, leader):
+        self.leader = leader
 
-    def post_bid(self, new_target, bids):
-        if self.uav_id > len(bids) - 1 or self.active == False:
-            return
-        self.new_missions = copy.deepcopy(self.current_missions)
+    def get_leader_bid(self, new_target):
+        new_missions = copy.deepcopy(self.current_missions)
         closest_mission_index = 0
-        for i in range(0, len(self.new_missions)):
+        for i in range(0, len(new_missions) - 1):
             closest_path_index = 0
-            for j in range(0, len(self.new_missions[i][1])):
-                if self.get_distance(self.new_missions[i][1][j], new_target[1][0]) \
-                        < self.get_distance(self.new_missions[closest_mission_index][1][closest_path_index], new_target[1][0]):
+            for j in range(0, len(new_missions[i][1])-1):
+                if self.get_distance(new_missions[i][1][j], new_target[1][0]) \
+                        < self.get_distance(new_missions[closest_mission_index][1][closest_path_index], new_target[1][0]):
                     closest_mission_index = i
                     closest_path_index = j
-        self.new_missions[closest_mission_index][1].insert(closest_path_index, new_target[1][0]) # assuming no forbidden areas in between
+        new_missions[closest_mission_index][1].insert(closest_path_index, new_target[1][0]) # assuming no forbidden areas in between
 
-        self.new_utility = self.calculate_utility(self.new_missions)
-        bids[self.uav_id] = self.current_utility - self.new_utility
+        new_utility = self.calculate_utility(new_missions)
+        return (self, self.current_utility - new_utility)
+
+    def post_bid(self, new_target, bids):
+        if self.current_index > len(bids) - 1:
+            return
+        if self.is_leader:
+            bids[self.current_index] = ([(self, self.current_missions)], -2)
+            # do something
+        else:
+            # get the closest path to the new target
+            new_mission_set = copy.deepcopy(self.current_missions)
+            closest_mission_index = 0
+            for i in range(0, len(new_mission_set) - 1):
+                closest_path_index = 0
+                #for j in range(0, len(new_mission_set[i][1])):
+                j = len(new_mission_set[i][1]) - 1
+                if self.get_distance(new_mission_set[i][1][j], new_target[1][0]) \
+                        < self.get_distance(new_mission_set[closest_mission_index][1][closest_path_index], new_target[1][0]):
+                    closest_mission_index = i
+            # insert the new mission
+            new_mission_set.insert(closest_mission_index, new_target) # assuming no forbidden areas in between
+            new_missions = [(self, new_mission_set)]
+            # check if after inserting the new mission it is within the leader radius for the rest of the time
+
+                # if it is return the bid (change in utility cost of the new missions compared to the old missions
+                # if it is not within the leader radius make the leader and all the other uavs move to a position where it is
+                # within the radius and wait(outside a threat area preferably), then return the bid
+                # (change of utility cost of all uavs in the group)
+        #if not leader get the
+        # self.new_missions = copy.deepcopy(self.current_missions)
+        # closest_mission_index = 0
+        # for i in range(0, len(self.new_missions)):
+        #     closest_path_index = 0
+        #     for j in range(0, len(self.new_missions[i][1])-1):
+        #         if self.get_distance(self.new_missions[i][1][j], new_target[1][0]) \
+        #                 < self.get_distance(self.new_missions[closest_mission_index][1][closest_path_index], new_target[1][0]):
+        #             closest_mission_index = i
+        #             closest_path_index = j
+        # self.new_missions[closest_mission_index][1].insert(closest_path_index, new_target[1][0]) # assuming no forbidden areas in between
+        #
+        # new_utility = self.calculate_utility(new_missions)
+        # bids[self.uav_id] = self.current_utility - self.new_utility
+            new_total_utility = 0
+            for mission_set in new_missions:
+                new_utility = self.calculate_utility(mission_set[1])
+                new_total_utility += mission_set[0].current_utility - new_utility
+            bids[self.current_index] = (new_missions, -1*new_utility)
 
     def accept_mission(self, new_target):
-        if len(self.new_missions) > 0: # TODO: add check if new_missions contains the new_target mission
-            self.current_missions = self.new_missions
-            self.new_missions = None
+        if len(self.new_mission) > 0: # TODO: add check if new_missions contains the new_target mission
+            self.current_missions = self.new_mission
+            self.new_mission = None
             self.current_utility = self.new_utility
             self.new_utility = None
         print("mission", new_target, "accepted by uav", self.uav_id)
 
     def cancel_new_mission(self, new_target):
-        if self.new_missions: # TODO: add check if new_missions contains the new_target mission
-            self.new_missions = None
+        if self.new_mission: # TODO: add check if new_missions contains the new_target mission
+            self.new_mission = None
             self.new_utility = None
 
     def calculate_utility(self, mission_list):
@@ -76,3 +124,4 @@ class UAVAgent:
 
     def get_distance(self, p1, p2):
         return math.sqrt(sum([(a - b) ** 2 for a, b in zip(p1, p2)]))
+
