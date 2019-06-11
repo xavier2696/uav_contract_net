@@ -70,45 +70,19 @@ class UAVAgent:
                 # if it is not within the leader radius make the leader and all the other uavs move to a position where it is
                 # within the radius and wait(outside a threat area preferably), then return the bid
                 # (change of utility cost of all uavs in the group)
-        #if not leader get the
-        # self.new_missions = copy.deepcopy(self.current_missions)
-        # closest_mission_index = 0
-        # for i in range(0, len(self.new_missions)):
-        #     closest_path_index = 0
-        #     for j in range(0, len(self.new_missions[i][1])-1):
-        #         if self.get_distance(self.new_missions[i][1][j], new_target[1][0]) \
-        #                 < self.get_distance(self.new_missions[closest_mission_index][1][closest_path_index], new_target[1][0]):
-        #             closest_mission_index = i
-        #             closest_path_index = j
-        # self.new_missions[closest_mission_index][1].insert(closest_path_index, new_target[1][0]) # assuming no forbidden areas in between
-        #
-        # new_utility = self.calculate_utility(new_missions)
-        # bids[self.uav_id] = self.current_utility - self.new_utility
+
             new_total_utility = 0
             for mission_set in new_missions:
                 new_utility = self.calculate_utility(mission_set[1])
                 new_total_utility += mission_set[0].current_utility - new_utility
             bids[self.current_index] = (new_missions, -1*new_utility)
 
-    def accept_mission(self, new_target):
-        if len(self.new_mission) > 0: # TODO: add check if new_missions contains the new_target mission
-            self.current_missions = self.new_mission
-            self.new_mission = None
-            self.current_utility = self.new_utility
-            self.new_utility = None
-        print("mission", new_target, "accepted by uav", self.uav_id)
-
-    def cancel_new_mission(self, new_target):
-        if self.new_mission: # TODO: add check if new_missions contains the new_target mission
-            self.new_mission = None
-            self.new_utility = None
-
     def calculate_utility(self, mission_list):
         utility = 0
         for mission in mission_list:
             risk = self.calculate_mission_risk(mission)
             fuel = self.calculate_mission_fuel(mission)
-            utility += -k1*risk-k1*fuel
+            utility += -k1*risk-k2*fuel
         return utility
 
     def calculate_mission_risk(self, mission):
