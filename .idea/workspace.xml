@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="bfd07a66-078e-4fd0-9c77-41d0b6857fe4" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/template.py" beforeDir="false" afterPath="$PROJECT_DIR$/template.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/uav_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/uav_agent.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -51,8 +53,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/template.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="68">
-              <caret line="124" column="24" lean-forward="true" selection-start-line="124" selection-start-column="24" selection-end-line="124" selection-end-column="24" />
+            <state relative-caret-position="255">
+              <caret line="139" column="133" selection-start-line="139" selection-start-column="133" selection-end-line="139" selection-end-column="133" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
               </folding>
@@ -63,8 +65,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/uav_agent.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="493">
-              <caret line="77" column="52" selection-start-line="77" selection-start-column="40" selection-end-line="77" selection-end-column="52" />
+            <state relative-caret-position="391">
+              <caret line="26" column="94" selection-start-line="26" selection-start-column="94" selection-end-line="26" selection-end-column="94" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
               </folding>
@@ -85,6 +87,10 @@
     <findStrings>
       <find>path_risk</find>
       <find>M_list</find>
+      <find>calculate_utility</find>
+      <find>current_utility</find>
+      <find>current_missions</find>
+      <find>self.current_missions</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -93,8 +99,8 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/template.py" />
         <option value="$PROJECT_DIR$/uav_agent.py" />
+        <option value="$PROJECT_DIR$/template.py" />
       </list>
     </option>
   </component>
@@ -110,6 +116,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -121,7 +128,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -310,8 +316,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/uav_agent.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="493">
-          <caret line="77" column="52" selection-start-line="77" selection-start-column="40" selection-end-line="77" selection-end-column="52" />
+        <state relative-caret-position="391">
+          <caret line="26" column="94" selection-start-line="26" selection-start-column="94" selection-end-line="26" selection-end-column="94" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
           </folding>
@@ -320,8 +326,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/template.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="68">
-          <caret line="124" column="24" lean-forward="true" selection-start-line="124" selection-start-column="24" selection-end-line="124" selection-end-column="24" />
+        <state relative-caret-position="255">
+          <caret line="139" column="133" selection-start-line="139" selection-start-column="133" selection-end-line="139" selection-end-column="133" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
           </folding>

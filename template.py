@@ -115,17 +115,52 @@ def contractnet_negotiation(case,info,M_list, TarNew):
             if i >= len(uav_list) or uav_list[i].is_leader:
                 break
             uavs_in_group += 1
-        bids = [(-1, -1)] * len(uav_list)
+        bids = [(-1, -1, False)] * len(uav_list)
         for i in range(winner[0].current_index, winner[0].current_index + uavs_in_group):
-            x = threading.Thread(target=uav_list[i].post_bid, args=(new_mission, bids))
-            #threads.append(x)
+            x = threading.Thread(target=uav_list[i].post_bid, args=(copy.deepcopy(new_mission), bids))
             x.start()
+            #uav_list[i].post_bid(new_mission, bids)
+            #threads.append(x)
+
         time.sleep(0.900)
 
         for bid in bids:
-            print(bid[1])
-        index_min = 0
-        all_negative = True
+            if bid[0] != -1:
+                print(bid[1], "over risk max", bid[2], "Missions:", bid[0][0][1])
+            else:
+                print(bid[1])
+        index_min, all_negative = get_winning_bid_index(bids)
+        if all_negative: # after making all bids all of the bids exceed the max risk
+            index_min, all_negative = get_winning_bid_index(bids, True)
+        if all_negative: # TODO deal with the case that no bids have been proposed
+            print("No bids")
+            return
+        winning_bid = bids[index_min]
+        # winning_bid[0] contains the list of (uav, new_mission_set)
+        print("mission", new_mission, "accepted by uav", winning_bid[0][0][0].uav_id, "in index", winning_bid[0][0][0].current_index)
+        for mission_set in winning_bid[0]:
+            M_list[mission_set[0].current_index] = mission_set[1]
+            # update missions
+            mission_set[0].update(copy.deepcopy(M_list[mission_set[0].current_index]), mission_set[0].current_index)
+            mission_set[0].print_info()
+
+        #M_list[info[2]].insert(-1, new_mission)# new target would also be mlist_struct with [[xnewtar, xnewtar], [[[xnewtar, xnewtar]]],...]
+        #M_list[info[2]].insert(0, new_mission)
+        TarNew.pop()
+
+def get_winning_bid_index(bids, ignoring_threat_threshold=False):
+    index_min = 0
+    all_negative = True
+    if not ignoring_threat_threshold:
+        for i in range(0, len(bids)):
+            if bids[i][1] < 0 or bids[i][2]:
+                continue
+            if all_negative:
+                index_min = i
+            all_negative = False
+            if bids[i][1] < bids[index_min][1] and not bids[index_min][2]:
+                index_min = i
+    else:
         for i in range(0, len(bids)):
             if bids[i][1] < 0:
                 continue
@@ -134,26 +169,7 @@ def contractnet_negotiation(case,info,M_list, TarNew):
             all_negative = False
             if bids[i][1] < bids[index_min][1]:
                 index_min = i
-        if all_negative: # TODO deal with the case that no bids have been proposed
-            return
-        winning_bid = bids[index_min]
-        # winning_bid[0] contains the list of (uav, new_mission_set)
-        print("mission", new_mission, "accepted by uav", winning_bid[0][0][0].uav_id, "in index", winning_bid[0][0][0].current_index)
-        for mission_set in winning_bid[0]:
-            M_list[mission_set[0].current_index] = mission_set[1]
-        # print(index_min)
-        # print(M_list[index_min])
-        # print(uav_list[index_min].current_missions)
-        # M_list[index_min] = uav_list[index_min].current_missions
-        # append last end point
-        #M_list[info[2]].insert(-1, new_mission)# new target would also be mlist_struct with [[xnewtar, xnewtar], [[[xnewtar, xnewtar]]],...]
-        #M_list[info[2]].insert(0, new_mission)
-        TarNew.pop()
-        #update missions
-        for i in range(0, len(uav_list)):
-            uav_list[i].update(copy.deepcopy(M_list[i]), i)
-
-
+    return index_min, all_negative
 
 def path_replanning(pos ,info,M_list, T_list):
     return
