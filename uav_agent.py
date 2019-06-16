@@ -11,7 +11,7 @@ class UAVAgent:
     def __init__(self, uav_id, current_missions, forbidden_areas, threats):
         self.uav_id = uav_id
         self.current_missions = current_missions
-        self.all_missions = current_missions
+        self.all_missions = copy.deepcopy(self.current_missions)
         self.forbidden_areas = forbidden_areas
         self.threats = threats
         self.current_utility = calculate_utility(self.all_missions, self.threats)
@@ -19,6 +19,7 @@ class UAVAgent:
         self.is_leader = (self.uav_id == 0 or self.uav_id == 5 or self.uav_id == 10)
         self.current_index = self.uav_id
         self.print_info()
+        self.active = True
 
     def update(self, current_missions, current_index, threats=None):
         old_missions = self.current_missions
@@ -35,6 +36,9 @@ class UAVAgent:
         print("UAV", self.uav_id, "agent, utility:", self.current_utility, " risk:",
               calculate_total_risk(self.all_missions, self.threats), " number missions:",
               len(self.all_missions))
+
+    def deactivate(self):
+        self.active = False
 
     def set_leader(self, leader):
         self.leader = leader
@@ -55,23 +59,29 @@ class UAVAgent:
         return (self, self.current_utility - new_utility)
 
     def post_bid(self, new_target, bids):
+        if not self.active:
+            return
         if self.current_index > len(bids) - 1:
             return
         if self.is_leader:
-            bids[self.current_index] = ([(self, self.current_missions)], -2, False)
+            bids[self.current_index] = ([(self, self.current_missions)], -2, -2, False)
             # do something
         else:
             # get the closest path to the new target
             new_mission_set = copy.deepcopy(self.current_missions)
             closest_mission_index = 1
             for i in range(1, len(new_mission_set) - 1):
-                closest_path_index = 0
+                closest_path_index = len(new_mission_set[closest_mission_index][1]) - 1
                 #for j in range(0, len(new_mission_set[i][1])):
                 j = len(new_mission_set[i][1]) - 1
                 if get_distance(new_mission_set[i][1][j], new_target[1][0]) \
                         < get_distance(new_mission_set[closest_mission_index][1][closest_path_index], new_target[1][0]):
                     closest_mission_index = i
             # insert the new mission
+            #print("id:", self.uav_id, "current index:", self.current_index)
+            #print("Array before ", new_mission_set)
+            #print("Array:", new_mission_set[closest_mission_index-1])
+            #print("Index causing crash:", 1)
             last_coordinate_before = new_mission_set[closest_mission_index-1][1][len(new_mission_set[closest_mission_index-1][1]) - 1]
             new_target[1].insert(0, last_coordinate_before)
             mission_after = new_mission_set[closest_mission_index]
@@ -87,14 +97,17 @@ class UAVAgent:
                 # (change of utility cost of all uavs in the group)
 
             new_total_utility = 0
+            utility_difference = 0
             over_risk_threshold = False
             for mission_set in new_missions:
                 all_missions = get_new_all_missions(mission_set[0].all_missions, mission_set[1])
-                new_total_utility = new_total_utility + calculate_utility(all_missions, mission_set[0].threats)
+                new_utility = calculate_utility(all_missions, mission_set[0].threats)
+                new_total_utility += new_utility
+                utility_difference += mission_set[0].current_utility - new_utility
                 total_risk = calculate_total_risk(all_missions, mission_set[0].threats)
                 if total_risk > max_risk_total:
                     over_risk_threshold = True
-            bids[self.current_index] = (new_missions, -1*new_total_utility, over_risk_threshold)
+            bids[self.current_index] = (new_missions, -1*new_total_utility, utility_difference, over_risk_threshold)
 
 #helper methods
 def calculate_utility(mission_list, threats):

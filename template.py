@@ -55,10 +55,14 @@ def update(pos, info, M_list , T_list, T_note, T_old, Forbid, TarNew):
             print('New Target')
             print(TarNew)
             print(i[2])
+            print("M_list size:",len(M_list))
+            for mission in M_list:
+                print(mission)
             contractnet_negotiation('new target', i, M_list, TarNew)
         elif(i[0] == 'fail'):
-            print('UAV Fail')
-            print(i[1])
+            print('UAV Fail: ', i[1])
+            print(len(M_list))
+            print(M_list[i[1]])
             contractnet_negotiation('fail', i, M_list, TarNew)
             TarNew.clear()
         elif(i[0] == 'detect threat'):
@@ -76,7 +80,8 @@ def contractnet_negotiation(case,info,M_list, TarNew):
                 if i >= len(uav_list) or uav_list[i].is_leader:
                     break
                 uav_list[i].set_leader(uav_list[info[1]+1])
-        uav_list.pop(info[1])
+        #uav_list.pop(info[1])
+        uav_list[info[1]].deactivate()
 #        leader = int(info[1]/5)*5
 #        # make leader took over the mission when original mission had all done
 #        mission_of_leader = [M_list[leader][i][0] for i in range(len(M_list[leader]))]
@@ -99,24 +104,24 @@ def contractnet_negotiation(case,info,M_list, TarNew):
         #     return
         new_mission = TarNew[0]
         #get bids from leaders to know which group will handle the new target
-        leader_bids = []
-        for uav in uav_list:
-            if uav.is_leader:
-                leader_bids.append(uav.get_leader_bid(new_mission))
-        winner = leader_bids[0]
-        for bid in leader_bids:
-            print(bid[1])
-            if bid[1] < winner[1]:
-                winner = bid
-        print("leader uav", winner[0].uav_id, "will take the mission")
+        #leader_bids = []
+        #for uav in uav_list:
+        #    if uav.is_leader:
+        #        leader_bids.append(uav.get_leader_bid(new_mission))
+        #winner = leader_bids[0]
+        #for bid in leader_bids:
+        #    print(bid[1])
+        #    if bid[1] < winner[1]:
+        #        winner = bid
+        #print("leader uav", winner[0].uav_id, "will take the mission")
         #initiate contract net protocol between the uavs under the command of the leader to decide who will take the mission
-        uavs_in_group = 1
-        for i in range(winner[0].current_index + 1, len(uav_list)):
-            if i >= len(uav_list) or uav_list[i].is_leader:
-                break
-            uavs_in_group += 1
-        bids = [(-1, -1, False)] * len(uav_list)
-        for i in range(winner[0].current_index, winner[0].current_index + uavs_in_group):
+        #uavs_in_group = 1
+        #for i in range(winner[0].current_index + 1, len(uav_list)):
+        #    if i >= len(uav_list) or uav_list[i].is_leader:
+        #        break
+        #    uavs_in_group += 1
+        bids = [(-1, -1, -1, False)] * len(uav_list)
+        for i in range(0, len(uav_list)):
             x = threading.Thread(target=uav_list[i].post_bid, args=(copy.deepcopy(new_mission), bids))
             x.start()
             #uav_list[i].post_bid(new_mission, bids)
@@ -126,7 +131,7 @@ def contractnet_negotiation(case,info,M_list, TarNew):
 
         for bid in bids:
             if bid[0] != -1:
-                print(bid[1], "over risk max", bid[2], "Missions:", bid[0][0][1])
+                print("New Utility:", bid[1], "Utility diff:", bid[2], "over risk max", bid[3], "Missions:", bid[0][0][1])
             else:
                 print(bid[1])
         index_min, all_negative = get_winning_bid_index(bids)
@@ -149,27 +154,45 @@ def contractnet_negotiation(case,info,M_list, TarNew):
         TarNew.pop()
 
 def get_winning_bid_index(bids, ignoring_threat_threshold=False):
-    index_min = 0
+    return_index = 0
     all_negative = True
     if not ignoring_threat_threshold:
+        index_min = 0
         for i in range(0, len(bids)):
-            if bids[i][1] < 0 or bids[i][2]:
+            if bids[i][2] < 0 or bids[i][3]:
                 continue
             if all_negative:
                 index_min = i
             all_negative = False
-            if bids[i][1] < bids[index_min][1] and not bids[index_min][2]:
+            if bids[i][2] < bids[index_min][2] and not bids[index_min][3]:
                 index_min = i
+        same_diff_indexes = []
+        for i in range(0, len(bids)):
+            if bids[i][2] == bids[index_min][2]:
+                same_diff_indexes.append(i)
+        return_index = same_diff_indexes[0]
+        for i in same_diff_indexes:
+            if bids[i][1] < bids[return_index][1]:
+                return_index = i
     else:
+        index_min = 0
         for i in range(0, len(bids)):
-            if bids[i][1] < 0:
+            if bids[i][2] < 0:
                 continue
             if all_negative:
                 index_min = i
             all_negative = False
-            if bids[i][1] < bids[index_min][1]:
+            if bids[i][2] < bids[index_min][2]:
                 index_min = i
-    return index_min, all_negative
+        same_diff_indexes = []
+        for i in range(0, len(bids)):
+            if bids[i][2] == bids[index_min][2]:
+                same_diff_indexes.append(i)
+        return_index = same_diff_indexes[0]
+        for i in same_diff_indexes:
+            if bids[i][1] < bids[return_index][1]:
+                return_index = i
+    return return_index, all_negative
 
 def path_replanning(pos ,info,M_list, T_list):
     return
